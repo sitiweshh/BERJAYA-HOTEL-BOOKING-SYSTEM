@@ -1,0 +1,315 @@
+import java.io.*;
+import java.util.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import javax.swing.JOptionPane;
+import javax.swing.JTextArea;
+import javax.swing.JScrollPane;
+import java.awt.Font;
+public class HotelQueueMain {
+ private static final String BOOKING_FILE_PATH = "D:\\SEM3\\PROJECT\\Booking[2].txt";
+ public static void main(String[] args) {
+ HotelQueue hotelBookings = new HotelQueue();
+ // Read data from "Booking.txt" file and populate the queue
+ try {
+ BufferedReader inFile = new BufferedReader(new FileReader(BOOKING_FILE_PATH));
+ String line;
+ while ((line = inFile.readLine()) != null) {
+ String[] bookingData = line.split(";");
+ HotelBooking newBooking = new HotelBooking(bookingData[0], bookingData[1], Integer.parseInt(bookingData[2]),
+ Integer.parseInt(bookingData[3]), bookingData[4], 
+Integer.parseInt(bookingData[5]),
+ Integer.parseInt(bookingData[6]), bookingData[7].charAt(0),
+ Boolean.parseBoolean(bookingData[8]), bookingData[9], bookingData[10].charAt(0), bookingData[11]);
+ hotelBookings.enqueue(newBooking);
+ }
+ inFile.close();
+ } catch (IOException e) {
+ JOptionPane.showMessageDialog(null, "Error reading data from file: " + e.getMessage());
+ }
+ int choice;
+ boolean exitProgram = false;
+ do {
+ String choiceString = JOptionPane.showInputDialog(getMenu());
+ if (choiceString == null) {
+ // User clicked the 'Cancel' button or closed the dialog exitProgram = true;
+ JOptionPane.showMessageDialog(null, "Exiting Hotel Management System...");
+ } else {
+ try {
+ choice = Integer.parseInt(choiceString);
+ if (choice == 1) {
+ addBooking(hotelBookings);
+ updateBookingFile(hotelBookings);
+ } else if (choice == 2) {
+ removeBooking(hotelBookings);
+ updateBookingFile(hotelBookings);
+ } else if (choice == 3) {
+ updatePaymentStatus(hotelBookings);
+ updateBookingFile(hotelBookings);
+ } else if (choice == 4) {
+ displayUnpaidBookings(hotelBookings);
+ } else if (choice == 5) {
+ displayPaidBookings(hotelBookings);
+ } else if (choice == 6) {
+ displayUpcomingBookings(hotelBookings);
+ } else if (choice == 7) {
+ calculateTotalPayments(hotelBookings);
+ } else if (choice == 0) {
+ exitProgram = true;
+ JOptionPane.showMessageDialog(null, "Exiting Hotel Management System...");
+ } else {
+ JOptionPane.showMessageDialog(null, "Invalid choice. Please try again.");
+ }
+ } catch (NumberFormatException e) {
+ JOptionPane.showMessageDialog(null, "Invalid input. Please enter a number.");
+ }
+ }
+ } while (!exitProgram);
+ }
+//Method for JOPane display
+ public static String getMenu() {
+ return "---- Hotel Management System ----\n" +
+ "1. Add Booking\n" +
+ "2. Remove Booking\n" +
+ "3. Update Payment Status\n" +
+ "4. Display Unpaid Bookings\n" +
+ "5. Display Paid Bookings\n" +
+ "6. Display Upcoming Bookings\n" +
+ "7. Calculate Total Payments\n" +
+ "0. Exit\n" +
+ "---------------------------------";
+ }
+//Method for add booking
+ public static void addBooking(HotelQueue hotelBookings) {
+ System.out.println("---- Add Booking ----");
+ // Get input for new booking using JOptionPane
+ String guestName = JOptionPane.showInputDialog("Guest Name:");
+ String phoneNumber = JOptionPane.showInputDialog("Phone Number:");
+ int numOfGuests = Integer.parseInt(JOptionPane.showInputDialog("Number of 
+Guests:"));
+ int bookingID = Integer.parseInt(JOptionPane.showInputDialog("Booking ID:"));
+ String bookingDate = JOptionPane.showInputDialog("Booking Date:");
+ int totalDay = Integer.parseInt(JOptionPane.showInputDialog("Total Day of Stay:"));
+ int roomNo = Integer.parseInt(JOptionPane.showInputDialog("Room Number:"));
+ char roomCategory = JOptionPane.showInputDialog("Room Category:").charAt(0);
+ boolean breakfast = Boolean.parseBoolean(JOptionPane.showInputDialog("Breakfast
+Included [true/false]:"));
+ String paymentDate = JOptionPane.showInputDialog("Payment Date:");
+ char paymentStatus = JOptionPane.showInputDialog("Payment Status:").charAt(0);
+ String paymentMethod = JOptionPane.showInputDialog("Payment Method:");
+ // Create a new HotelBooking object
+ HotelBooking newBooking = new HotelBooking(
+ guestName, phoneNumber, numOfGuests, bookingID, bookingDate, totalDay,
+ roomNo, roomCategory, breakfast, paymentDate, paymentStatus, paymentMethod
+ );
+ // Enqueue the new booking to the queue
+ hotelBookings.enqueue(newBooking);
+ JOptionPane.showMessageDialog(null, "Booking added successfully.");
+ }
+//Method to remove booking by using booking ID
+ public static void removeBooking(HotelQueue hotelBookings) {
+ System.out.println("---- Remove Booking ----");
+ String input = JOptionPane.showInputDialog("Enter the Booking ID to remove:");
+ if (input == null) {
+ return; // User clicked the 'Close' button or closed the dialog
+ }
+ try {
+ int bookingID = Integer.parseInt(input);
+ boolean removed = false;
+ int initialSize = hotelBookings.size();
+ // Create a temporary queue to store non-matching bookings
+ HotelQueue tempQueue = new HotelQueue();
+ for (int i = 0; i < initialSize; i++) {
+ HotelBooking booking = hotelBookings.dequeue();
+ if (booking.getBookingID() == bookingID) {
+ removed = true;
+ JOptionPane.showMessageDialog(null, "Booking removed successfully.");
+ } else {
+ tempQueue.enqueue(booking);
+ }
+ }
+ // Copy the remaining bookings back to the original queue
+ while (!tempQueue.isEmpty()) {
+ hotelBookings.enqueue(tempQueue.dequeue());
+ }
+ if (!removed) {
+ JOptionPane.showMessageDialog(null, "Booking ID not found.");
+ }
+ } 
+ catch (NumberFormatException e) {
+ JOptionPane.showMessageDialog(null, "Invalid input. Please enter a valid Booking ID.");
+ }
+ }
+//Method to update the payment status
+ public static void updatePaymentStatus(HotelQueue hotelBookings) {
+ System.out.println("---- Update Payment Status ----");
+ String bookingIDString = JOptionPane.showInputDialog("Enter the Booking ID to update payment status:");
+ if (bookingIDString == null) {
+ return; 
+// User clicked the 'Close' button or closed the dialog
+ }
+ try {
+ int bookingID = Integer.parseInt(bookingIDString);
+ boolean found = false;
+ int initialSize = hotelBookings.size();
+ HotelQueue tempQueue = new HotelQueue();
+ for (int i = 0; i < initialSize; i++) {
+ HotelBooking booking = hotelBookings.dequeue();
+ if (booking.getBookingID() == bookingID) {
+ String paymentStatusInput = JOptionPane.showInputDialog("Enter the new 
+Payment Status (D or N):");
+ if (paymentStatusInput == null || paymentStatusInput.isEmpty()) {
+ JOptionPane.showMessageDialog(null, "Invalid payment status input.");
+ return;
+ }
+ char paymentStatus = paymentStatusInput.toUpperCase().charAt(0);
+ booking.setPaymentStatus(paymentStatus);
+ JOptionPane.showMessageDialog(null, "Payment status updated successfully.");
+ found = true;
+ }
+ tempQueue.enqueue(booking);
+ }
+ while (!tempQueue.isEmpty()) {
+ hotelBookings.enqueue(tempQueue.dequeue()); 
+// Enqueue all bookings back into hotelBookings
+ }
+ if (!found) {
+ JOptionPane.showMessageDialog(null, "Booking ID not found.");
+ }
+ } 
+ catch (NumberFormatException e) {
+ JOptionPane.showMessageDialog(null, "Invalid input. Please enter a valid 
+Booking ID.");
+ }
+ }
+//Method to display all the unpaid bookings
+ public static void displayUnpaidBookings(HotelQueue hotelBookings) {
+ StringBuilder unpaidBookings = new StringBuilder();
+ boolean found = false;
+ HotelQueue tempQueue = new HotelQueue();
+ while (!hotelBookings.isEmpty()) {
+ HotelBooking booking = hotelBookings.dequeue();
+ if (booking.getPaymentStatus() == 'N') {
+ unpaidBookings.append(booking.toString()).append("\n");
+ found = true;
+ }
+ tempQueue.enqueue(booking);
+ }
+ while (!tempQueue.isEmpty()) {
+ hotelBookings.enqueue(tempQueue.dequeue());
+ }
+ if (found) {
+ JTextArea textArea = new JTextArea(unpaidBookings.toString(), 20, 50);
+ textArea.setEditable(false);
+textArea.setFont(new Font("Courier New", Font.PLAIN, 12)); 
+// Set the font to a fixed-width font
+ JScrollPane scrollPane = new JScrollPane(textArea);
+ JOptionPane.showMessageDialog(null, scrollPane, "Unpaid Bookings", JOptionPane.PLAIN_MESSAGE);
+ } else {
+ JOptionPane.showMessageDialog(null, "No unpaid bookings found.");
+ } 
+ }
+ 
+ //Method to display all the paid bookings
+ public static void displayPaidBookings(HotelQueue hotelBookings) {
+ StringBuilder paidBookings = new StringBuilder();
+ boolean found = false;
+ HotelQueue tempQueue = new HotelQueue();
+ while (!hotelBookings.isEmpty()) {
+ HotelBooking booking = hotelBookings.dequeue();
+ if (booking.getPaymentStatus() == 'D') {
+ paidBookings.append(booking.toString()).append("\n");
+ found = true;
+ }
+ tempQueue.enqueue(booking);
+ }
+ while (!tempQueue.isEmpty()) {
+ hotelBookings.enqueue(tempQueue.dequeue());
+ }
+ if (found) {
+ JTextArea textArea = new JTextArea(paidBookings.toString(), 20, 50);
+ textArea.setEditable(false);
+textArea.setFont(new Font("Courier New", Font.PLAIN, 12)); 
+// Set the font to a fixed-width font
+ JScrollPane scrollPane = new JScrollPane(textArea);
+ JOptionPane.showMessageDialog(null, scrollPane, "Paid Bookings", JOptionPane.PLAIN_MESSAGE);
+ } else {
+ JOptionPane.showMessageDialog(null, "No paid bookings found.");
+ } 
+ }
+//Method to display all the upcoming bookings
+ public static void displayUpcomingBookings(HotelQueue hotelBookings) {
+ StringBuilder upcomingBookings = new StringBuilder();
+ boolean found = false;
+ String currentDate = getCurrentDate();
+ DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+ LocalDate specifiedDate = LocalDate.parse("20230707", formatter);
+ HotelQueue tempQueue = new HotelQueue();
+ while (!hotelBookings.isEmpty()) {
+ HotelBooking booking = hotelBookings.dequeue();
+ LocalDate bookingDate = LocalDate.parse(booking.getBookingDate(), formatter);
+ if (bookingDate.isAfter(specifiedDate)) {
+ upcomingBookings.append(booking.toString()).append("\n");
+ found = true;
+ }
+ tempQueue.enqueue(booking);
+ }
+ while (!tempQueue.isEmpty()) {
+ hotelBookings.enqueue(tempQueue.dequeue());
+ }
+ if (found) {
+ JTextArea textArea = new JTextArea(upcomingBookings.toString(), 20, 50);
+ textArea.setEditable(false);
+textArea.setFont(new Font("Courier New", Font.PLAIN, 12)); 
+// Set the font to a fixed-width font
+ JScrollPane scrollPane = new JScrollPane(textArea);
+ JOptionPane.showMessageDialog(null, scrollPane, "Upcoming Bookings", JOptionPane.PLAIN_MESSAGE);
+ } else {
+ JOptionPane.showMessageDialog(null, "No upcoming bookings found.");
+ }
+ }
+//Method to calculate the total payments
+ public static void calculateTotalPayments(HotelQueue hotelBookings) {
+ StringBuilder paymentSummary = new StringBuilder();
+ 
+ double totalPaymentD = 0; // Total payments received from category D
+ double totalPaymentN = 0; // Total payments received from category N
+ HotelQueue tempQueue = new HotelQueue(); // Temporary queue to store the bookings
+
+ while (!hotelBookings.isEmpty()) {
+ HotelBooking booking = hotelBookings.dequeue();
+ if (booking.getPaymentStatus() == 'D') {
+ totalPaymentD += booking.calculateTotalPayment();
+ } else if (booking.getPaymentStatus() == 'N') {
+ totalPaymentN += booking.calculateTotalPayment();
+ }
+ tempQueue.enqueue(booking);
+ }
+ while (!tempQueue.isEmpty()) {
+ hotelBookings.enqueue(tempQueue.dequeue()); // Enqueue all bookings back into hotelBookings
+ }
+ paymentSummary.append("Total Payment Received (D): RM ").append(totalPaymentD).append("\n");
+ paymentSummary.append("Total Payment Received (N): RM ").append(totalPaymentN);
+ JOptionPane.showMessageDialog(null, "---- Calculate Total Payments ----\n" + paymentSummary.toString());
+ }
+//Method to format the date 
+ public static String getCurrentDate() {
+ LocalDate currentDate = LocalDate.now();
+ DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+ return currentDate.format(formatter);
+ }
+//Method to update the booking file
+ public static void updateBookingFile(HotelQueue hotelBookings) {
+ try {
+ PrintWriter writer = new PrintWriter(BOOKING_FILE_PATH);
+ HotelBooking[] bookingsArray = hotelBookings.toArray();
+ for (HotelBooking booking : bookingsArray) {
+ writer.println(booking.toString());
+ }
+ writer.close();
+ } catch (IOException e) {
+ JOptionPane.showMessageDialog(null, "Error updating booking file: " + 
+e.getMessage());
+ }
+ } 
+}

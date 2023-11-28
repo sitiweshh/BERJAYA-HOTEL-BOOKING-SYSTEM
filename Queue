@@ -1,0 +1,32 @@
+//import java.util.*;
+public class Queue extends LinkedList
+{
+ public Queue() { } // constructor
+ public void enqueue( Object elem)
+ { insertAtBack (elem); }
+ public Object dequeue ( )
+ { return removeFromFront(); }
+ public Object getFront()
+ { return getFirst(); }
+ public Object getEnd()
+ { Object O = removeFromBack();
+ insertAtBack(O);
+ return O;
+ }
+ 
+ public String toString(){
+ String print="";
+ Object obj;
+ LinkedList temp = new LinkedList();
+ while(!this.isEmpty())
+ {
+ obj = this.dequeue();
+ print = print + obj +" ";
+ temp.insertAtBack(obj);
+ }
+ while(!temp.isEmpty())
+ this.enqueue(temp.removeFromFront());
+ 
+ return print;
+ }//end toString()
+} // end Queue

@@ -1,0 +1,77 @@
+import java.util.NoSuchElementException;
+public class HotelQueue {
+ private static class Node {
+ private HotelBooking data;
+ private Node next;
+ public Node(HotelBooking data) {
+ this.data = data;
+ }
+ }
+ private Node head;
+ private Node tail;
+ public void enqueue(HotelBooking data) {
+ Node newNode = new Node(data);
+ if (tail == null) {
+ head = newNode;
+ tail = newNode;
+ } else {
+ tail.next = newNode;
+ tail = newNode;
+ }
+ }
+ public HotelBooking dequeue() {
+ if (head == null) {
+ throw new NoSuchElementException();
+ }
+ HotelBooking data = head.data;
+ head = head.next;
+ if (head == null) {
+ tail = null;
+ }
+ return data;
+ }
+ public boolean isEmpty() {
+ return head == null;
+ }
+ // Additional method to get all the bookings as an array
+ public HotelBooking[] toArray() {
+ HotelBooking[] bookingsArray = new HotelBooking[size()];
+ Node current = head;
+ int index = 0;
+ while (current != null) {
+ bookingsArray[index++] = current.data;
+ current = current.next;
+ }
+ return bookingsArray;
+ }
+ // Additional method to remove a specific booking
+ public void removeBooking(HotelBooking booking) {
+ Node current = head;
+ Node prev = null;
+ while (current != null) {
+ if (current.data.equals(booking)) {
+ if (prev == null) {
+ head = current.next;
+ } else {
+ prev.next = current.next;
+ }
+ if (current.next == null) {
+ tail = prev;
+ }
+ return;
+ }
+ prev = current;
+ current = current.next;
+ }
+ }
+ // Additional method to get the size of the queue
+ public int size() {
+ int count = 0;
+ Node current = head;
+ while (current != null) {
+ count++;
+ current = current.next;
+ }
+ return count;
+ }
+}
